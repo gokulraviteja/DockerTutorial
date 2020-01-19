@@ -1,0 +1,259 @@
+docker --version	
+docker pull ubuntu			 -> download an image
+docker images     			 -> show all images 
+docker run -it -d ubuntu  		 -> run a image 
+docker ps                                -> show all running containers 
+docker stop <-container_id->             -> stop container from running
+docker ps -a                             -> show all containers both running and not running
+docker exec -it <-container_id-> bash    -> get inside the container
+docker stop <-container_id->             -> stops the container from running 
+docker kill <-container_id->             -> kills the container even some program is running 
+docker rm   <-container_id->             -> remove container from system
+docker rmi  <-image_id->                 -> remove image from the system
+docker rm -f <-container_id->             -> remove container from system even when it is running(force remove)
+
+
+FLAGS:
+-it -> make terminal interactive
+-d  -> make container daemon, it should run in background even not working on it
+-p  82:80 -> port matching
+82 port of os to 80 of container
+
+
+docker run -it -p 82:80 -d gokulraviteja/apache
+
+
+-------
+
+save changes in container to image
+
+docker commit <-container_id-> <-newimagename->
+
+-------
+
+docker rm -f $(docker ps -a -q)  	->remove all containers at once
+
+docker login
+docker push  <-imagename->				-> push image to docker hub
+
+
+---------
+
+
+Dockerfile - doc that contain all commands that user call on cmd to assemble an image
+
+
+
+format
+________________
+
+FROM <-imagename->
+RUN  <-command to be run inside container ex:apt-get update->
+ADD  <-place where files are present-> <-location inside container where the files to be present->
+CMD  <-Any command to run at start of container  (during docker run if there is no argument specified then this cmd instructions run else they dont run)->
+ENTRYPOINT  <-Same as CMD but the diff is entrypoint runs irrespective of argument given or not ->
+ENV  <-environment variables to be set inside a container (ex: ENV name Devops Intellipat) ->
+ 
+________________
+
+docker build . -t new_dockerfile_image    -> dockerfile is executed 
+
+________________
+
+--------------
+Doker volumes 
+---------------
+
+->bind mount
+
+docker run -it -v /home/ubuntu/dockerfile:/app -d ubuntu
+
+files inside app folder are same as the docker file folder which are mirrored from host os directory
+
+disadv: diff environment have diff file structures home/ubuntu/dockerfile .....changes
+
+
+
+-> volumes
+
+
+Docker manages the handling part of the file system itself
+
+docker volume create  <-volumename->        			->creates a volume
+docker volume ls						->show all volumes 
+docker run -it --mount source=test_volumename,target=/foldername_insidecontainer -d ubuntu
+
+____________________
+IMPPPP
+
+docker cp ./2.html <-container_id->:/var/www/html
+
+
+docker cp path_in_system_of_file <-container_id->:path_inside_container
+
+copy file from system to container
+_________
+
+
+Deploying multiple containers
+----------------------------
+
+using Docker Compose -> tool for defining and running  multiple container dockers appilications using YAML file to configure
+
+
+
+example: wordpress.yaml
+
+
+
+verion:'3.3'
+services:
+	db:				-> container trying to 	launch						
+	    image:mysql:5.7   		-> pulling the image for the container
+	    volumes:
+		-db_data:/var/lib/mysql -> created a volume and the target location
+	    restart:always
+	    environment:		-> create env variables
+		MYSQL_ROOT_PASSWORD:
+		MYSQL_DATABASE:
+		MYSQL_USER:
+		MYSQL_PASSWORD:
+	wordpress:			-> other container to be launched
+	    depends_on:
+		-db                (creates a link between the wordpress container and db container)
+	    image:wordpress:latest
+	    ports:
+		-"8000:80"         (inside container it is avalable on port 80 mapped with 8000 of host)
+	    restart:always
+	    environment:		-> create env variables
+		WORDPRESS_DB_HOST:db:3306
+		WORDPRESS_DB_USER:
+		WORDPRESS_DB_PASSWORD:
+	volumes:
+	    db_data
+
+	    
+docker-compose up -d    -> run the docker-compose.yaml or docker-compose.yml file 
+
+		
+______________________________________________________________________________________
+
+CONTAINER ORCHESTRATION
+ 
+ALL the containers health moniter by docker itself
+
+when container is down , docker create a new one and replace it 
+
+
+tool: docker swarm
+
+It is a clustering and scheduling tool for docker . 
+With swarm , developers can manage a cluster of docker nodes as a single virtual system
+
+Uses multiple machines , (as machine can also go down)
+
+Leader- worker1,worker2 ,..... distributed kind of architecture
+
+
+->
+
+Leader
+
+docker swarm init --advertise-addr:172.1.....
+
+
+then u get a command which is to be copied on other instance to join as worker
+#advertise-addr- private ip address of instance
+
+
+docker node ls 			-> show all nodes in a cluster
+
+docker swarm leave		-> to leave the swarm
+
+docker swarm leave --force      -> master to leave the swarm
+
+
+
+_____________________________
+DEPLOYING APP ON DOCKER SWARM
+
+Services:
+
+	Containers aron cluster are deployed using services on docker sworm.
+	Service is long running docker container that can be deployed to any node.
+	
+	
+
+creating a service
+
+docker service create --name apache_service_name --replicas 5 -p 83:80 image_name
+
+docker service ls   -> show all services
+
+docker service scale apache=2   -> scale the replicas
+
+docker service rm apache
+
+
+
+
+________________________________
+
+Kubernetes
+
+Container Orchestration tool used when our appilication is distributed in multiple containers.
+Its job is to monitor , scale, restart containers automatically even if they are spread across multiple nodes.
+
+Features:
+
+1. Managing multiple containers as one entity
+2. Health checks
+3. Load Balancing
+4. Resource usage monitoring
+5. Networking
+6. Rolling Update
+
+
+
+Kubernetes Cluster
+				k-master
+
+
+			k-node1   k-node2  k-node3....
+
+master play role of monitoring , scheduling , ....
+nodes do job of processing , sending api calls ,....
+
+
+Architecture
+----------
+
+
+Pod - is basically a container (or multiple containers)
+
+
+service - internal load balancer of requests among the pods
+
+
+ingress - send req to service by seeing the request accordingly
+
+
+_____________________
+
+
+
+kubectl get nodes					-> nodes running on my cluster
+kubectl get pods --all-namespaces -o wide		-> all pods rnning on my system
+
+kubectl create deployment deploymentname --image=nginx:1.7.9
+kubectl create -f deploy.yaml
+
+kubectl delete deployment <deploymentname>
+
+kubectl create service nodeport <-nameofserviceshouldbesamenameasdeployment-> --tcp=80:80
+
+kubectl get svc
+
+kubectl delete service <servicename>
+
+
